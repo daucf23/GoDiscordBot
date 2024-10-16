@@ -3,20 +3,15 @@ package main
 import (
 	"fmt"
 
-	"github.com/daucf23/GoDiscordBot/bot"
-	"github.com/daucf23/GoDiscordBot/config"
+	"github.com/daucf23/GoDiscordBot/internal"
 )
 
 func main() {
-	err := config.ReadConfig()
-
+	err := internal.ReadConfig()
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-
-	bot.Start()
-
+	internal.BotStart()
 	<-make(chan struct{})
-	return
 }
