@@ -144,19 +144,33 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		if strings.HasPrefix(content, "ai") {
-			query := strings.TrimSpace(strings.TrimPrefix(content, "ai"))
+			content = strings.TrimSpace(strings.TrimPrefix(content, "ai"))
+			query := "Trying in 40 words or less, " + content + "."
 			if query == "" {
 				_, _ = s.ChannelMessageSend(m.ChannelID, "You need to ask something.")
 				return
 			}
 
-			response, err := CallOpenAIAPI(query)
+			// Define the function to send updates to Discord
+			sendToDiscord := func(partialResponse string) {
+				if partialResponse != "" {
+					_, _ = s.ChannelMessageSend(m.ChannelID, partialResponse)
+				}
+			}
+
+			// Call the OpenAI API and send the response in chunks
+			response, err := CallOpenAIAPI(query, sendToDiscord)
 			fmt.Println(response, err)
 			if err != nil {
-				_, _ = s.ChannelMessageSend(m.ChannelID, "Failed to call gpt API.")
+				_, _ = s.ChannelMessageSend(m.ChannelID, "Failed to call GPT API.")
 				return
 			}
-			_, _ = s.ChannelMessageSend(m.ChannelID, response)
+
+			// Optionally send the final response if needed (though chunks should be sent already)
+			if response != "" {
+				_, _ = s.ChannelMessageSend(m.ChannelID, response)
+			}
 		}
+
 	}
 }

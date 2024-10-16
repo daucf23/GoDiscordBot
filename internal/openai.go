@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 )
 
-func CallOpenAIAPI(query string) (string, error) {
+func CallOpenAIAPI(query string, sendToDiscord func(string)) (string, error) {
 	// Get API key from environment variables
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
@@ -19,13 +21,15 @@ func CallOpenAIAPI(query string) (string, error) {
 	// Initialize OpenAI client
 	client := openai.NewClient(option.WithAPIKey(apiKey), option.WithHeader("OpenAI-Beta", "assistants=v2"))
 
-	ctx := context.Background()
+	// Increase the timeout to handle long-running tasks (e.g., 15 minutes)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
 
 	fmt.Println("API Key: ", apiKey)
 	fmt.Println("Query: ", query)
 
 	// Existing Assistant ID
-	assistantID := "asst_82obYP26qtottx6GKC4yCUPn"
+	assistantID := "asst_q5iV50WBjQ1QuRzTp6rQMbkQ"
 
 	// Create a thread
 	thread, err := client.Beta.Threads.New(ctx, openai.BetaThreadNewParams{})
@@ -59,29 +63,29 @@ func CallOpenAIAPI(query string) (string, error) {
 	}
 
 	var response string
+	var buffer string           // Buffer to accumulate parts of the response
+	const maxBufferLength = 500 // Adjust to the number of characters to send per chunk
 
 	for stream.Next() {
 		evt := stream.Current()
 
-		// Debug: print out the received data
-		//fmt.Printf("Received data: %+v\n", evt.Data)
-
 		// Handle different event types
 		switch eventData := evt.Data.(type) {
-		case openai.Run:
-			fmt.Println("Run metadata received, status:", eventData.Status)
-			// You might want to handle `Run` events differently, but they mostly contain metadata.
-		case openai.RunStep:
-			fmt.Println("Run step received, step details:", eventData.StepDetails)
 		case openai.MessageDeltaEvent:
 			// Here is where the response content is streamed
 			for _, contentPart := range eventData.Delta.Content {
 				if contentPart.Type == "text" {
-					response += contentPart.Text.Value // Collect text content from the delta
+					response += contentPart.Text.Value
+					buffer += contentPart.Text.Value
+
+					// Send buffer to Discord if it's reached the chunk size limit
+					if len(buffer) >= maxBufferLength && strings.HasSuffix(buffer, ".") {
+						sendToDiscord(buffer)
+						buffer = "" // Clear the buffer
+					}
 				}
 			}
 		case openai.Message:
-			// Final complete message (may or may not be used, depending on your use case)
 			if eventData.Status == "completed" {
 				fmt.Println("Message completed, content:", response)
 			}
@@ -90,11 +94,15 @@ func CallOpenAIAPI(query string) (string, error) {
 		}
 	}
 
+	// Flush any remaining buffer after the stream ends
+	if buffer != "" {
+		sendToDiscord(buffer)
+	}
+
 	// Check for stream errors after iteration
 	if stream.Err() != nil {
 		return "", fmt.Errorf("error in stream: %v", stream.Err())
 	}
-
+	response = ""
 	return response, nil
-
 }
