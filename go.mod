@@ -4,6 +4,8 @@ go 1.23.0
 
 require github.com/bwmarrin/discordgo v0.28.1
 
+require golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
+
 require (
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/openai/openai-go v0.1.0-alpha.27
