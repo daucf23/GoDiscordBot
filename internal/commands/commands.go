@@ -20,12 +20,11 @@ func CheckUserInput(content string, s *discordgo.Session, m *discordgo.MessageCr
 	if content == "help" {
 		helpMessage := "Commands:\n" +
 			"!ping - Responds with 'pong' (wow, amazing)\n" +
-			"!changetoidle - Changes the bot's status to idle (so exciting)\n" +
 			"!greet - Greets you (if you really need that)\n" +
 			"!roll - Rolls a die (whoopee)\n" +
 			"!serverinfo - Gives server info (riveting)\n" +
 			"!quote - Random quote (because why not?)\n" +
-			"!ai - Calls the OpenAI API"
+			"!ask - Chat with low-effort-bot"
 		_, _ = s.ChannelMessageSend(m.ChannelID, helpMessage)
 	}
 
@@ -63,7 +62,7 @@ func CheckUserInput(content string, s *discordgo.Session, m *discordgo.MessageCr
 			_, _ = s.ChannelMessageSend(m.ChannelID, "Failed to get server info. Oops.")
 			return
 		}
-		serverInfo := fmt.Sprintf("Server Name: %s\nMember Count: %d", guild.Name, guild.MemberCount)
+		serverInfo := fmt.Sprintf("Server Name: %s\nMembers Online: %d", guild.Name, guild.ApproximatePresenceCount)
 		_, _ = s.ChannelMessageSend(m.ChannelID, serverInfo)
 	}
 
@@ -107,9 +106,9 @@ func CheckUserInput(content string, s *discordgo.Session, m *discordgo.MessageCr
 		_, _ = s.ChannelMessageSend(m.ChannelID, quote)
 	}
 
-	if strings.HasPrefix(content, "ai") {
-		content = strings.TrimSpace(strings.TrimPrefix(content, "ai"))
-		query := "Trying in 40 words or less, " + content + "."
+	if strings.HasPrefix(content, "ask") {
+		content = strings.TrimSpace(strings.TrimPrefix(content, "ask"))
+		query := "Try to respond coherently in about 40 words or less. Perhaps try to keep it about the length of a tweet and emojis like a tweet. Try to make responses kinda like copypasta posts. Also, respond in a low effort or sassy/ sarcastic tone. we want your help, but in a comical and slightly unhelpful way. Here is the following prompt: " + content + "."
 		if query == "" {
 			_, _ = s.ChannelMessageSend(m.ChannelID, "You need to ask something.")
 			return
