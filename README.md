@@ -280,5 +280,3 @@ You have successfully compiled your Go-based Discord bot and set it up as a syst
   - Ensure the binary is executable and compiled for the correct architecture.
 
 ---
-
-**Feel free to reach out if you encounter any issues or have questions. Happy coding!**
